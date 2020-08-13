@@ -64,7 +64,7 @@ extern "C" {
 #define MAX_SECONDS 1
 
 #define USEC_UNIT 1000000
-    
+
 #define AV_LOG_FILE_NAME "av_mux_log"
 #define AV_LOG_EXT ".txt"
 #define AV_LOG_FILE AV_LOG_FILE_NAME AV_LOG_EXT    
@@ -82,7 +82,7 @@ using namespace cv;
 
 //#define FRAME_RATE 20
 //#define TOT_BUFF_SIZE FRAME_RATE*2
-#define DEFAULT_FILE_NAME "/tmp/media/mux_output.mp4"
+#define DEFAULT_FILE_NAME "mux_output.mp4"
 
 struct audio_stream {
     uint8_t *buff;
