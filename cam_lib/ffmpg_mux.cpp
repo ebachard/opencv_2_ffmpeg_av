@@ -23,10 +23,31 @@
 
 
 
+static int encode(AVCodecContext *avctx, AVPacket *pkt, AVFrame *frame, int *got_packet)
+{
+    int ret;
+
+    *got_packet = 0;
+
+    ret = avcodec_send_frame(avctx, frame);
+    if (ret < 0)
+        return ret;
+
+    ret = avcodec_receive_packet(avctx, pkt);
+    if (!ret)
+        *got_packet = 1;
+    if (ret == AVERROR(EAGAIN))
+        return 0;
+
+    return ret;
+}
+
+
+
 static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt)
 {
     AVRational *time_base = &fmt_ctx->streams[pkt->stream_index]->time_base;
-    printf("pts:%s pts_time:%s dts:%s dts_time:%s duration:%s duration_time:%s stream_index:%d\n",    
+    fprintf(stderr, "pts:%s pts_time:%s dts:%s dts_time:%s duration:%s duration_time:%s stream_index:%d\n",    
            av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, time_base),
            av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, time_base),
            av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, time_base),
@@ -277,22 +298,21 @@ int ffmpeg_mux::write_audio_frame_ex(AVFormatContext* oc, OutputStream* ost, AVF
         frame->pts = av_rescale_q(ost->samples_count, (AVRational){1, c->sample_rate}, c->time_base);
         ost->samples_count += dst_nb_samples;
     }
-    ret = avcodec_encode_audio2(c, &pkt, frame, &got_packet);
-    if (ret < 0) {
+
+    ret = encode(c, &pkt, frame, &got_packet);
+
+    if (ret < 0)
         throw cam_exception(string("Error encoding audio frame:")+ av_err2str(ret));
-//        fprintf(stderr, "Error encoding audio frame: %s\n", av_err2str(ret));
-//        exit(1);
-    }
-    if (got_packet) {
+
+    if (got_packet)
+    {
         ret = write_frame(oc, &c->time_base, ost->st, &pkt);
-        if (ret < 0) {
+
+        if (ret < 0)
             throw cam_exception(string("Error while writing audio frame: ")+av_err2str(ret));
-//            fprintf(stderr, "Error while writing audio frame: %s\n",
-//                    av_err2str(ret));
-//            exit(1);
-        }
     }
-    av_free_packet(&pkt);
+    av_packet_unref(&pkt);
+
     return (frame || got_packet) ? 0 : 1;    
 }
 
@@ -410,23 +430,21 @@ int ffmpeg_mux::write_video_frame_cv(AVFormatContext* oc, OutputStream* ost, cv:
     frame = get_video_frame_cv(ost, opencv_frame);
     av_init_packet(&pkt);
     /* encode the image */
-    ret = avcodec_encode_video2(c, &pkt, frame, &got_packet);
-    if (ret < 0) {
+    // ret = avcodec_encode_video2(c, &pkt, frame, &got_packet);
+    ret = encode(c, &pkt, frame, &got_packet);
+
+    if (ret < 0)
         throw cam_exception(string("Error encoding video frame: ")+av_err2str(ret));
-//        fprintf(stderr, "Error encoding video frame: %s\n", av_err2str(ret));
-//        exit(1);
-    }
-    if (got_packet) {
+
+    if (got_packet)
         ret = write_frame(oc, &c->time_base, ost->st, &pkt);
-    } else {
+    else
         ret = 0;
-    }
-    if (ret < 0) {
+
+    if (ret < 0)
         throw cam_exception(string("Error while writing video frame: ")+av_err2str(ret));
-//        fprintf(stderr, "Error while writing video frame: %s\n", av_err2str(ret));
-//        exit(1);
-    }
-    av_free_packet(&pkt);
+
+    av_packet_unref(&pkt);
     return (frame || got_packet) ? 0 : 1;    
 }
 
