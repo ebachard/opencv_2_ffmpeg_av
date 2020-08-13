@@ -176,26 +176,26 @@ int cam_capture::init_audio_SDL()
         s.samples = 4096;//2048;//4096;//8192;//8192;//4096;
         s.callback = c;
         s.userdata = this;
-    };    
-    
-  
-    
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
+    };
+
+
+    if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
         string er = string("SDL could not initialize! SDL Error: ",SDL_GetError());
         throw cam_exception(er);
-//        return 1;
-    }
-    
-    int no_recording_devices = SDL_GetNumAudioDevices(SDL_TRUE);
-    if (no_recording_devices <= 0) {
-        throw cam_exception("no recording devices found on system");
-//        return 2;
+        return 1;
     }
 
-    if (common.audio_dev_id >= no_recording_devices)
-        throw cam_exception("Audio device does not exist");
-        //return 3;
-    
+//    int no_recording_devices = SDL_GetNumAudioDevices(SDL_TRUE);
+
+//    if (no_recording_devices <= 0) {
+//        throw cam_exception("no recording devices found on system");
+//        return 2;
+//    }
+
+//    if (common.audio_dev_id >= no_recording_devices)
+//        throw cam_exception("Audio device does not exist");
+//        return 3;
+
     set_audio_spec_S32(desiredAudioRecSpec, rec_callback);
 
     recording_device = SDL_OpenAudioDevice(SDL_GetAudioDeviceName(common.audio_dev_id, SDL_TRUE), SDL_TRUE, &desiredAudioRecSpec, &receivedAudioRecSpec, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
@@ -555,6 +555,7 @@ int cam_capture::set_video_writer(std::string filename)
     /*to do
      check if filename exists here*/
     
+//    int fourcc = VideoWriter::fourcc('D','I','V','3');
     int fourcc = VideoWriter::fourcc('m','p','4','v');
     writer = VideoWriter(filename, fourcc,common.frame_rate, Size(common.frame_width, common.frame_height),true);
     int res = writer.isOpened()?0:1; 
@@ -798,10 +799,16 @@ void cam_capture::set_av_common_default(){
             conf.add_config(val);
         }
     }
-    
+#define BIG_FRAMES
+#ifdef BIG_FRAMES
+    conf.get_config("frame_height", common.frame_height, 720);
+    conf.get_config("frame_width", common.frame_width, 1280);
+    conf.get_config("frame_rate", common.frame_rate, 24);
+#else
     conf.get_config("frame_height", common.frame_height, 480);
     conf.get_config("frame_width", common.frame_width, 640);
     conf.get_config("frame_rate", common.frame_rate, 15);
+#endif
     conf.get_config("video_dev_id",common.video_dev_id,0);
     conf.get_config("audio_dev_id",common.audio_dev_id,1);
     conf.get_config("av_file_name",common.filename,string(DEFAULT_FILE_NAME));
