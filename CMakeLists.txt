@@ -16,5 +16,6 @@ add_subdirectory(./logger)
 #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/cam_lib)
 add_executable(cam_exe main.cpp)
 
-target_link_libraries(cam_exe logger av_cam)
+target_link_libraries(cam_exe logger av_cam harfbuzz)
 install(TARGETS cam_exe DESTINATION bin)
+
