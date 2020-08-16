@@ -61,7 +61,7 @@ int cam_capture::fin_audio_SDL() {
     delete[] common.audio1.buff;
     delete[] common.audio2.buff;
     SDL_CloseAudioDevice(recording_device);
-    SDL_Quit();
+//    SDL_Quit();
     //raw_audio.close();
     return 0;
 }

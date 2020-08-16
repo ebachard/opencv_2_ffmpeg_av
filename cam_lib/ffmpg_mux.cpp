@@ -23,7 +23,7 @@
 
 
 
-static int encode(AVCodecContext *avctx, AVPacket *pkt, AVFrame *frame, int *got_packet)
+int ffmpeg_mux::encode(AVCodecContext *avctx, AVPacket *pkt, AVFrame *frame, int *got_packet)
 {
     int ret;
 
@@ -47,17 +47,20 @@ static int encode(AVCodecContext *avctx, AVPacket *pkt, AVFrame *frame, int *got
 static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt)
 {
     AVRational *time_base = &fmt_ctx->streams[pkt->stream_index]->time_base;
+
     fprintf(stderr, "pts:%s pts_time:%s dts:%s dts_time:%s duration:%s duration_time:%s stream_index:%d\n",    
            av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, time_base),
            av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, time_base),
            av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, time_base),
            pkt->stream_index);
 }
+
 int ffmpeg_mux::write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AVStream *st, AVPacket *pkt)
 {
     /* rescale output packet timestamp values from codec to stream timebase */
     av_packet_rescale_ts(pkt, *time_base, st->time_base);
     pkt->stream_index = st->index;
+
     /* Write the compressed frame to the media file. */
 //    log_packet(fmt_ctx, pkt);
     return av_interleaved_write_frame(fmt_ctx, pkt);
@@ -106,6 +109,7 @@ void ffmpeg_mux::add_stream(OutputStream *ost, AVFormatContext *oc,
                     c->sample_rate = 44100;
             }
         }
+
         c->channel_layout = AV_CH_LAYOUT_MONO;//AV_CH_LAYOUT_MONO;//AV_CH_LAYOUT_STEREO;
         if ((*codec)->channel_layouts) {
             c->channel_layout = (*codec)->channel_layouts[0];
@@ -664,7 +668,8 @@ int ffmpeg_mux::mux()
 }
 
 
-int ffmpeg_mux::process_mux(){
+int ffmpeg_mux::process_mux()
+{
     thread t = std::thread(&ffmpeg_mux::do_mux,this, audio_reader1, video_reader1);
     t.detach();//try not detaching this when you get a chance.  "DEFINITELY DON'T JOIN"
     return 0;

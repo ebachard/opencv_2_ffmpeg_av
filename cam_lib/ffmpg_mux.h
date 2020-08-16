@@ -48,6 +48,7 @@ private:
     AVFormatContext *oc;
     AVCodec *audio_codec, *video_codec;
     int have_video, have_audio, encode_video, encode_audio;
+    int encode(AVCodecContext *avctx, AVPacket *pkt, AVFrame *frame, int *got_packet);
     AVDictionary *opt;
     void wait_signal();
     int allocate_buffer(OutputStream *ost);
